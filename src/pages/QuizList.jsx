@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import QuizCard from "../components/QuizCard";
 import { Search, SlidersHorizontal, BookOpen, Star, Clock } from "lucide-react";
+import fallbackQuizData from "../data/quiz.json";
 
 export default function QuizList() {
   const [quizzes, setQuizzes] = useState([]);
@@ -15,7 +16,7 @@ export default function QuizList() {
   useEffect(() => {
     fetch("/data/quiz.json")
       .then((res) => {
-        if (!res.ok) throw new Error("Failed to load quiz data");
+        if (!res.ok) return fallbackQuizData;
         return res.json();
       })
       .then((data) => {
@@ -23,7 +24,8 @@ export default function QuizList() {
         setLoading(false);
       })
       .catch((err) => {
-        setError(err.message);
+        console.warn("Fetch failed, using fallback:", err);
+        setQuizzes(fallbackQuizData.quizzes);
         setLoading(false);
       });
   }, []);

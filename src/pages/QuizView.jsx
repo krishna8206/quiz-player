@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { ArrowLeft, Clock, HelpCircle, Target, Award, Play, ShieldAlert, Zap } from "lucide-react";
+import fallbackQuizData from "../data/quiz.json";
 
 export default function QuizView() {
   const { id } = useParams();
@@ -16,7 +17,7 @@ export default function QuizView() {
   useEffect(() => {
     fetch("/data/quiz.json")
       .then((res) => {
-        if (!res.ok) throw new Error("Failed to load data");
+        if (!res.ok) return fallbackQuizData;
         return res.json();
       })
       .then((data) => {
@@ -29,7 +30,13 @@ export default function QuizView() {
         setLoading(false);
       })
       .catch((err) => {
-        setError(err.message);
+        console.warn("Fetch failed, using fallback:", err);
+        const found = fallbackQuizData.quizzes.find((q) => q.id === id);
+        if (found) {
+          setQuiz(found);
+        } else {
+          setError("Quiz not found");
+        }
         setLoading(false);
       });
   }, [id]);

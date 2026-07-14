@@ -4,6 +4,7 @@ import { Clock, CheckCircle2, XCircle, Trophy, ArrowRight, Home, RotateCcw } fro
 import confetti from "canvas-confetti";
 import { saveLeaderboardEntry } from "../services/leaderboardService";
 import { soundService } from "../services/soundService";
+import fallbackQuizData from "../data/quiz.json";
 
 // Helper to shuffle an array (Fisher-Yates)
 const shuffleArray = (array) => {
@@ -43,7 +44,7 @@ export default function QuizPlayer() {
   useEffect(() => {
     fetch("/data/quiz.json")
       .then((res) => {
-        if (!res.ok) throw new Error("Failed to load data");
+        if (!res.ok) return fallbackQuizData;
         return res.json();
       })
       .then((data) => {
@@ -70,7 +71,23 @@ export default function QuizPlayer() {
         setLoading(false);
       })
       .catch((err) => {
-        setError(err.message);
+        console.warn("Fetch failed, using fallback:", err);
+        const found = fallbackQuizData.quizzes.find((q) => q.id === id);
+        if (found) {
+          let parsedQuiz = JSON.parse(JSON.stringify(found));
+          if (shuffleQuestions) {
+            parsedQuiz.questions = shuffleArray(parsedQuiz.questions);
+          }
+          if (shuffleOptions) {
+            parsedQuiz.questions.forEach((q) => {
+              q.options = shuffleArray(q.options);
+            });
+          }
+          setQuiz(parsedQuiz);
+          setTimeLeft(parsedQuiz.timePerQuestion);
+        } else {
+          setError("Quiz not found");
+        }
         setLoading(false);
       });
   }, [id, shuffleQuestions, shuffleOptions]);
