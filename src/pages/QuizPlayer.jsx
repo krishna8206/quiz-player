@@ -270,7 +270,7 @@ export default function QuizPlayer() {
             {!scoreSubmitted ? (
               <div className="bg-slate-50 dark:bg-slate-700/50 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 mb-8">
                 <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-4">Save Your Score</h3>
-                <form onSubmit={handleScoreSubmit} className="flex gap-3">
+                <form onSubmit={handleScoreSubmit} className="flex flex-col sm:flex-row gap-3">
                   <input
                     type="text"
                     placeholder="Enter your name..."
