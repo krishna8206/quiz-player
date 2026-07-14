@@ -1,0 +1,714 @@
+{
+  "quizzes": [
+    {
+      "id": "quiz_1",
+      "title": "General Knowledge",
+      "description": "General Knowledge quiz.",
+      "thumbnail": "/images/quiz_1.jpg",
+      "category": "General Knowledge",
+      "difficulty": "Easy",
+      "timePerQuestion": 15,
+      "totalQuestions": 10,
+      "questions": [
+        {
+          "id": "quiz_1_q1",
+          "question": "Capital of India?",
+          "options": [
+            "Delhi",
+            "Mumbai",
+            "Pune",
+            "Jaipur"
+          ],
+          "correctAnswer": "Delhi",
+          "points": 10,
+          "explanation": "Delhi is the capital of India."
+        },
+        {
+          "id": "quiz_1_q2",
+          "question": "Largest planet?",
+          "options": [
+            "Earth",
+            "Mars",
+            "Jupiter",
+            "Venus"
+          ],
+          "correctAnswer": "Jupiter",
+          "points": 10,
+          "explanation": "Jupiter is the largest planet."
+        },
+        {
+          "id": "quiz_1_q3",
+          "question": "Fastest land animal?",
+          "options": [
+            "Tiger",
+            "Leopard",
+            "Cheetah",
+            "Lion"
+          ],
+          "correctAnswer": "Cheetah",
+          "points": 10,
+          "explanation": "Cheetah is fastest."
+        },
+        {
+          "id": "quiz_1_q4",
+          "question": "Largest ocean?",
+          "options": [
+            "Atlantic",
+            "Indian",
+            "Pacific",
+            "Arctic"
+          ],
+          "correctAnswer": "Pacific",
+          "points": 10,
+          "explanation": "Pacific is largest."
+        },
+        {
+          "id": "quiz_1_q5",
+          "question": "Currency of Japan?",
+          "options": [
+            "Yen",
+            "Won",
+            "Dollar",
+            "Euro"
+          ],
+          "correctAnswer": "Yen",
+          "points": 10,
+          "explanation": "Japan uses Yen."
+        },
+        {
+          "id": "quiz_1_q6",
+          "question": "Mount Everest is in?",
+          "options": [
+            "India",
+            "Nepal",
+            "China",
+            "Bhutan"
+          ],
+          "correctAnswer": "Nepal",
+          "points": 10,
+          "explanation": "Everest lies on Nepal-China border."
+        },
+        {
+          "id": "quiz_1_q7",
+          "question": "How many continents?",
+          "options": [
+            "5",
+            "6",
+            "7",
+            "8"
+          ],
+          "correctAnswer": "7",
+          "points": 10,
+          "explanation": "There are seven continents."
+        },
+        {
+          "id": "quiz_1_q8",
+          "question": "H2O is?",
+          "options": [
+            "Salt",
+            "Water",
+            "Oxygen",
+            "Hydrogen"
+          ],
+          "correctAnswer": "Water",
+          "points": 10,
+          "explanation": "H2O is water."
+        },
+        {
+          "id": "quiz_1_q9",
+          "question": "National animal of India?",
+          "options": [
+            "Tiger",
+            "Lion",
+            "Elephant",
+            "Peacock"
+          ],
+          "correctAnswer": "Tiger",
+          "points": 10,
+          "explanation": "Royal Bengal Tiger."
+        },
+        {
+          "id": "quiz_1_q10",
+          "question": "Sun rises in?",
+          "options": [
+            "North",
+            "South",
+            "East",
+            "West"
+          ],
+          "correctAnswer": "East",
+          "points": 10,
+          "explanation": "Earth rotates west to east."
+        }
+      ]
+    },
+    {
+      "id": "quiz_2",
+      "title": "React.js Basics",
+      "description": "React.js Basics quiz.",
+      "thumbnail": "/images/quiz_2.jpg",
+      "category": "Programming",
+      "difficulty": "Medium",
+      "timePerQuestion": 20,
+      "totalQuestions": 10,
+      "questions": [
+        {
+          "id": "quiz_2_q1",
+          "question": "React is maintained by?",
+          "options": [
+            "Google",
+            "Meta",
+            "Microsoft",
+            "Amazon"
+          ],
+          "correctAnswer": "Meta",
+          "points": 10,
+          "explanation": "Meta maintains React."
+        },
+        {
+          "id": "quiz_2_q2",
+          "question": "Hook for state?",
+          "options": [
+            "useRef",
+            "useState",
+            "useMemo",
+            "useEffect"
+          ],
+          "correctAnswer": "useState",
+          "points": 10,
+          "explanation": "useState manages state."
+        },
+        {
+          "id": "quiz_2_q3",
+          "question": "JSX stands for?",
+          "options": [
+            "Java XML",
+            "JavaScript XML",
+            "JSON XML",
+            "Java Syntax XML"
+          ],
+          "correctAnswer": "JavaScript XML",
+          "points": 10,
+          "explanation": "JSX means JavaScript XML."
+        },
+        {
+          "id": "quiz_2_q4",
+          "question": "Default React file extension?",
+          "options": [
+            ".jsx",
+            ".java",
+            ".ts",
+            ".vue"
+          ],
+          "correctAnswer": ".jsx",
+          "points": 10,
+          "explanation": "JSX extension."
+        },
+        {
+          "id": "quiz_2_q5",
+          "question": "Navigation library?",
+          "options": [
+            "React Router",
+            "Express",
+            "Redux",
+            "Axios"
+          ],
+          "correctAnswer": "React Router",
+          "points": 10,
+          "explanation": "React Router handles routing."
+        },
+        {
+          "id": "quiz_2_q6",
+          "question": "Virtual DOM purpose?",
+          "options": [
+            "Styling",
+            "Performance",
+            "Database",
+            "Hosting"
+          ],
+          "correctAnswer": "Performance",
+          "points": 10,
+          "explanation": "It optimizes rendering."
+        },
+        {
+          "id": "quiz_2_q7",
+          "question": "State should be?",
+          "options": [
+            "Mutated",
+            "Immutable",
+            "Deleted",
+            "Global"
+          ],
+          "correctAnswer": "Immutable",
+          "points": 10,
+          "explanation": "Treat state as immutable."
+        },
+        {
+          "id": "quiz_2_q8",
+          "question": "Hook for side effects?",
+          "options": [
+            "useEffect",
+            "useRef",
+            "useState",
+            "useId"
+          ],
+          "correctAnswer": "useEffect",
+          "points": 10,
+          "explanation": "Runs side effects."
+        },
+        {
+          "id": "quiz_2_q9",
+          "question": "Props are?",
+          "options": [
+            "Mutable",
+            "Read-only",
+            "Database",
+            "CSS"
+          ],
+          "correctAnswer": "Read-only",
+          "points": 10,
+          "explanation": "Props are read-only."
+        },
+        {
+          "id": "quiz_2_q10",
+          "question": "Build tool?",
+          "options": [
+            "Vite",
+            "MySQL",
+            "Firebase",
+            "Docker"
+          ],
+          "correctAnswer": "Vite",
+          "points": 10,
+          "explanation": "Vite is a modern build tool."
+        }
+      ]
+    },
+    {
+      "id": "quiz_3",
+      "title": "Movies & Entertainment",
+      "description": "Movies & Entertainment quiz.",
+      "thumbnail": "/images/quiz_3.jpg",
+      "category": "Entertainment",
+      "difficulty": "Easy",
+      "timePerQuestion": 15,
+      "totalQuestions": 10,
+      "questions": [
+        {
+          "id": "quiz_3_q1",
+          "question": "Iron Man belongs to?",
+          "options": [
+            "DC",
+            "Marvel",
+            "Pixar",
+            "Sony"
+          ],
+          "correctAnswer": "Marvel",
+          "points": 10,
+          "explanation": "Iron Man is Marvel."
+        },
+        {
+          "id": "quiz_3_q2",
+          "question": "Avatar director?",
+          "options": [
+            "James Cameron",
+            "Nolan",
+            "Spielberg",
+            "Scott"
+          ],
+          "correctAnswer": "James Cameron",
+          "points": 10,
+          "explanation": "Directed Avatar."
+        },
+        {
+          "id": "quiz_3_q3",
+          "question": "Harry Potter author?",
+          "options": [
+            "Rowling",
+            "Tolkien",
+            "Lewis",
+            "Martin"
+          ],
+          "correctAnswer": "Rowling",
+          "points": 10,
+          "explanation": "J.K. Rowling."
+        },
+        {
+          "id": "quiz_3_q4",
+          "question": "Sherlock Holmes creator?",
+          "options": [
+            "Conan Doyle",
+            "Agatha",
+            "Dickens",
+            "Twain"
+          ],
+          "correctAnswer": "Conan Doyle",
+          "points": 10,
+          "explanation": "Arthur Conan Doyle."
+        },
+        {
+          "id": "quiz_3_q5",
+          "question": "Oscar awards are for?",
+          "options": [
+            "Sports",
+            "Movies",
+            "Music",
+            "Science"
+          ],
+          "correctAnswer": "Movies",
+          "points": 10,
+          "explanation": "Academy Awards."
+        },
+        {
+          "id": "quiz_3_q6",
+          "question": "Elsa appears in?",
+          "options": [
+            "Moana",
+            "Frozen",
+            "Coco",
+            "Brave"
+          ],
+          "correctAnswer": "Frozen",
+          "points": 10,
+          "explanation": "Disney's Frozen."
+        },
+        {
+          "id": "quiz_3_q7",
+          "question": "Batman city?",
+          "options": [
+            "Metropolis",
+            "Gotham",
+            "Central",
+            "Star"
+          ],
+          "correctAnswer": "Gotham",
+          "points": 10,
+          "explanation": "Batman protects Gotham."
+        },
+        {
+          "id": "quiz_3_q8",
+          "question": "Hogwarts teaches?",
+          "options": [
+            "Cooking",
+            "Magic",
+            "Science",
+            "History"
+          ],
+          "correctAnswer": "Magic",
+          "points": 10,
+          "explanation": "Wizarding school."
+        },
+        {
+          "id": "quiz_3_q9",
+          "question": "Minions first appeared in?",
+          "options": [
+            "Cars",
+            "Despicable Me",
+            "Up",
+            "Shrek"
+          ],
+          "correctAnswer": "Despicable Me",
+          "points": 10,
+          "explanation": "2010 film."
+        },
+        {
+          "id": "quiz_3_q10",
+          "question": "Joker is villain of?",
+          "options": [
+            "Spider-Man",
+            "Batman",
+            "Iron Man",
+            "Thor"
+          ],
+          "correctAnswer": "Batman",
+          "points": 10,
+          "explanation": "Batman villain."
+        }
+      ]
+    },
+    {
+      "id": "quiz_4",
+      "title": "Science",
+      "description": "Science quiz.",
+      "thumbnail": "/images/quiz_4.jpg",
+      "category": "Science",
+      "difficulty": "Hard",
+      "timePerQuestion": 25,
+      "totalQuestions": 10,
+      "questions": [
+        {
+          "id": "quiz_4_q1",
+          "question": "Symbol of Gold?",
+          "options": [
+            "Go",
+            "Au",
+            "Ag",
+            "Gd"
+          ],
+          "correctAnswer": "Au",
+          "points": 10,
+          "explanation": "Au is Gold."
+        },
+        {
+          "id": "quiz_4_q2",
+          "question": "Nearest star?",
+          "options": [
+            "Sirius",
+            "Sun",
+            "Polaris",
+            "Alpha"
+          ],
+          "correctAnswer": "Sun",
+          "points": 10,
+          "explanation": "The Sun."
+        },
+        {
+          "id": "quiz_4_q3",
+          "question": "Human heart chambers?",
+          "options": [
+            "2",
+            "3",
+            "4",
+            "5"
+          ],
+          "correctAnswer": "4",
+          "points": 10,
+          "explanation": "Four chambers."
+        },
+        {
+          "id": "quiz_4_q4",
+          "question": "Gas plants absorb?",
+          "options": [
+            "Oxygen",
+            "Nitrogen",
+            "CO2",
+            "Hydrogen"
+          ],
+          "correctAnswer": "CO2",
+          "points": 10,
+          "explanation": "Photosynthesis."
+        },
+        {
+          "id": "quiz_4_q5",
+          "question": "Speed of light unit?",
+          "options": [
+            "km/h",
+            "m/s",
+            "mph",
+            "fps"
+          ],
+          "correctAnswer": "m/s",
+          "points": 10,
+          "explanation": "SI unit."
+        },
+        {
+          "id": "quiz_4_q6",
+          "question": "DNA full form starts with?",
+          "options": [
+            "Dynamic",
+            "Deoxyribo",
+            "Digital",
+            "Dual"
+          ],
+          "correctAnswer": "Deoxyribo",
+          "points": 10,
+          "explanation": "Deoxyribonucleic Acid."
+        },
+        {
+          "id": "quiz_4_q7",
+          "question": "Boiling point water?",
+          "options": [
+            "50\u00b0C",
+            "100\u00b0C",
+            "120\u00b0C",
+            "90\u00b0C"
+          ],
+          "correctAnswer": "100\u00b0C",
+          "points": 10,
+          "explanation": "At sea level."
+        },
+        {
+          "id": "quiz_4_q8",
+          "question": "Planet known as Red Planet?",
+          "options": [
+            "Mars",
+            "Venus",
+            "Mercury",
+            "Saturn"
+          ],
+          "correctAnswer": "Mars",
+          "points": 10,
+          "explanation": "Mars."
+        },
+        {
+          "id": "quiz_4_q9",
+          "question": "Largest organ?",
+          "options": [
+            "Heart",
+            "Skin",
+            "Liver",
+            "Brain"
+          ],
+          "correctAnswer": "Skin",
+          "points": 10,
+          "explanation": "Skin is largest."
+        },
+        {
+          "id": "quiz_4_q10",
+          "question": "Electric current unit?",
+          "options": [
+            "Volt",
+            "Watt",
+            "Ampere",
+            "Ohm"
+          ],
+          "correctAnswer": "Ampere",
+          "points": 10,
+          "explanation": "SI unit."
+        }
+      ]
+    },
+    {
+      "id": "quiz_5",
+      "title": "Sports",
+      "description": "Sports quiz.",
+      "thumbnail": "/images/quiz_5.jpg",
+      "category": "Sports",
+      "difficulty": "Medium",
+      "timePerQuestion": 15,
+      "totalQuestions": 10,
+      "questions": [
+        {
+          "id": "quiz_5_q1",
+          "question": "Players in football team?",
+          "options": [
+            "9",
+            "10",
+            "11",
+            "12"
+          ],
+          "correctAnswer": "11",
+          "points": 10,
+          "explanation": "11 players."
+        },
+        {
+          "id": "quiz_5_q2",
+          "question": "Olympics every?",
+          "options": [
+            "2",
+            "3",
+            "4",
+            "5"
+          ],
+          "correctAnswer": "4",
+          "points": 10,
+          "explanation": "Every four years."
+        },
+        {
+          "id": "quiz_5_q3",
+          "question": "Cricket bat made of?",
+          "options": [
+            "Oak",
+            "Willow",
+            "Pine",
+            "Teak"
+          ],
+          "correctAnswer": "Willow",
+          "points": 10,
+          "explanation": "English willow."
+        },
+        {
+          "id": "quiz_5_q4",
+          "question": "NBA sport?",
+          "options": [
+            "Football",
+            "Basketball",
+            "Baseball",
+            "Hockey"
+          ],
+          "correctAnswer": "Basketball",
+          "points": 10,
+          "explanation": "NBA."
+        },
+        {
+          "id": "quiz_5_q5",
+          "question": "Tennis Grand Slam in UK?",
+          "options": [
+            "US Open",
+            "French",
+            "Wimbledon",
+            "Australian"
+          ],
+          "correctAnswer": "Wimbledon",
+          "points": 10,
+          "explanation": "Held in London."
+        },
+        {
+          "id": "quiz_5_q6",
+          "question": "Chess pieces each side?",
+          "options": [
+            "14",
+            "15",
+            "16",
+            "17"
+          ],
+          "correctAnswer": "16",
+          "points": 10,
+          "explanation": "16 pieces."
+        },
+        {
+          "id": "quiz_5_q7",
+          "question": "Badminton shuttle called?",
+          "options": [
+            "Birdie",
+            "Ball",
+            "Puck",
+            "Disc"
+          ],
+          "correctAnswer": "Birdie",
+          "points": 10,
+          "explanation": "Common name."
+        },
+        {
+          "id": "quiz_5_q8",
+          "question": "Kabaddi players/team?",
+          "options": [
+            "5",
+            "6",
+            "7",
+            "8"
+          ],
+          "correctAnswer": "7",
+          "points": 10,
+          "explanation": "Seven players."
+        },
+        {
+          "id": "quiz_5_q9",
+          "question": "FIFA World Cup sport?",
+          "options": [
+            "Cricket",
+            "Football",
+            "Rugby",
+            "Tennis"
+          ],
+          "correctAnswer": "Football",
+          "points": 10,
+          "explanation": "Soccer."
+        },
+        {
+          "id": "quiz_5_q10",
+          "question": "Highest runs format?",
+          "options": [
+            "Test",
+            "ODI",
+            "T20",
+            "All"
+          ],
+          "correctAnswer": "Test",
+          "points": 10,
+          "explanation": "Generally Test."
+        }
+      ]
+    }
+  ]
+}
