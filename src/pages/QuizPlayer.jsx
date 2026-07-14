@@ -1,568 +1,403 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
-import { Clock, ArrowLeft, Play, Volume2, VolumeX, Keyboard, Settings, ChevronRight } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { Clock, CheckCircle2, XCircle, Trophy, ArrowRight, Home, RotateCcw } from "lucide-react";
+import confetti from "canvas-confetti";
+import { saveLeaderboardEntry } from "../services/leaderboardService";
+import { soundService } from "../services/soundService";
+
+// Helper to shuffle an array (Fisher-Yates)
+const shuffleArray = (array) => {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+};
 
 export default function QuizPlayer() {
   const { id } = useParams();
   const navigate = useNavigate();
-
-  // Quiz content states
+  const location = useLocation();
+  const { shuffleQuestions = false, shuffleOptions = false } = location.state || {};
+  
   const [quiz, setQuiz] = useState(null);
-  const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Configuration pre-game states
-  const [isPrepScreen, setIsPrepScreen] = useState(true);
-  const [shuffleQuestions, setShuffleQuestions] = useState(true);
-  const [shuffleOptions, setShuffleOptions] = useState(true);
-  const [soundEnabled, setSoundEnabled] = useState(true);
-
-  // Active quiz states
-  const [currentIdx, setCurrentIdx] = useState(0);
-  const [selectedOption, setSelectedOption] = useState("");
-  const [timeLeft, setTimeLeft] = useState(0);
+  // Gameplay State
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [score, setScore] = useState(0);
-  const [answersLog, setAnswersLog] = useState([]); // tracks: { questionId, selected, correct, isCorrect, points }
-  const [quizStarted, setQuizStarted] = useState(false);
-
-  // Timer & state references
+  const [timeLeft, setTimeLeft] = useState(0);
+  
+  // Interaction State
+  const [selectedOption, setSelectedOption] = useState(null);
+  const [isAnswered, setIsAnswered] = useState(false);
+  const [isFinished, setIsFinished] = useState(false);
+  const [submittingScore, setSubmittingScore] = useState(false);
+  const [playerName, setPlayerName] = useState("");
+  const [scoreSubmitted, setScoreSubmitted] = useState(false);
+  
   const timerRef = useRef(null);
-  const timeLeftRef = useRef(0);
-  timeLeftRef.current = timeLeft;
 
-  // Synthesize sound effects using Web Audio API (cross-platform, zero asset files required!)
-  const playSynthesizerSound = useCallback((type) => {
-    if (!soundEnabled) return;
-    try {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (!AudioCtx) return;
-      const ctx = new AudioCtx();
-      const osc = ctx.createOscillator();
-      const gainNode = ctx.createGain();
-      osc.connect(gainNode);
-      gainNode.connect(ctx.destination);
-
-      if (type === "correct") {
-        osc.type = "sine";
-        osc.frequency.setValueAtTime(440, ctx.currentTime); // A4
-        osc.frequency.setValueAtTime(554.37, ctx.currentTime + 0.08); // C#5
-        osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.16); // E5
-        gainNode.gain.setValueAtTime(0.08, ctx.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
-        osc.start(ctx.currentTime);
-        osc.stop(ctx.currentTime + 0.35);
-      } else if (type === "incorrect") {
-        osc.type = "triangle";
-        osc.frequency.setValueAtTime(180, ctx.currentTime);
-        osc.frequency.linearRampToValueAtTime(110, ctx.currentTime + 0.22);
-        gainNode.gain.setValueAtTime(0.15, ctx.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
-        osc.start(ctx.currentTime);
-        osc.stop(ctx.currentTime + 0.25);
-      } else if (type === "tick") {
-        osc.type = "sine";
-        osc.frequency.setValueAtTime(700, ctx.currentTime);
-        gainNode.gain.setValueAtTime(0.03, ctx.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
-        osc.start(ctx.currentTime);
-        osc.stop(ctx.currentTime + 0.05);
-      }
-    } catch (err) {
-      console.warn("AudioContext failed to initialize or play sound:", err);
-    }
-  }, [soundEnabled]);
-
-  // 1. Fetch Quiz Data
   useEffect(() => {
     fetch("/data/quiz.json")
       .then((res) => {
-        if (!res.ok) throw new Error("Could not fetch quiz definitions");
+        if (!res.ok) throw new Error("Failed to load data");
         return res.json();
       })
       .then((data) => {
         const found = data.quizzes.find((q) => q.id === id);
-        if (!found) throw new Error("Quiz not found");
-        setQuiz(found);
+        if (found) {
+          // Deep copy to allow mutation for shuffling
+          let parsedQuiz = JSON.parse(JSON.stringify(found));
+          
+          // Apply shuffling features
+          if (shuffleQuestions) {
+            parsedQuiz.questions = shuffleArray(parsedQuiz.questions);
+          }
+          if (shuffleOptions) {
+            parsedQuiz.questions.forEach((q) => {
+              q.options = shuffleArray(q.options);
+            });
+          }
+          
+          setQuiz(parsedQuiz);
+          setTimeLeft(parsedQuiz.timePerQuestion);
+        } else {
+          setError("Quiz not found");
+        }
         setLoading(false);
       })
       .catch((err) => {
         setError(err.message);
         setLoading(false);
       });
-  }, [id]);
+  }, [id, shuffleQuestions, shuffleOptions]);
 
-  // Helper: Shuffle an array (Fisher-Yates)
-  const shuffleArray = (array) => {
-    const copy = [...array];
-    for (let i = copy.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [copy[i], copy[j]] = [copy[j], copy[i]];
-    }
-    return copy;
-  };
-
-  // 2. Start Quiz Handler
-  const startQuiz = () => {
-    if (!quiz) return;
-    
-    // Process questions
-    let finalQuestions = quiz.questions.map((q) => {
-      // Shuffle options if enabled, otherwise keep original
-      const processedOptions = shuffleOptions ? shuffleArray(q.options) : [...q.options];
-      return {
-        ...q,
-        shuffledOptions: processedOptions
-      };
-    });
-
-    // Shuffle questions if enabled
-    if (shuffleQuestions) {
-      finalQuestions = shuffleArray(finalQuestions);
-    }
-
-    setQuestions(finalQuestions);
-    setIsPrepScreen(false);
-    setQuizStarted(true);
-    setCurrentIdx(0);
-    setTimeLeft(quiz.timePerQuestion);
-  };
-
-  // Helper to coordinate progression
-  const advanceQuiz = useCallback((currentLog, currentScore) => {
-    setSelectedOption("");
-    
-    if (currentIdx + 1 < questions.length) {
-      setCurrentIdx((prev) => prev + 1);
-    } else {
-      // Quiz Completed!
-      if (timerRef.current) clearInterval(timerRef.current);
-      setQuizStarted(false);
-
-      // Compute details for result page
-      const correctCount = currentLog.filter((l) => l.isCorrect).length;
-      const wrongCount = questions.length - correctCount;
-      const percentage = Math.round((correctCount / questions.length) * 100);
-
-      // Navigate to results
-      navigate(`/result/${quiz.id}`, {
-        state: {
-          quizId: quiz.id,
-          quizTitle: quiz.title,
-          score: currentScore,
-          totalPoints: questions.reduce((sum, q) => sum + q.points, 0),
-          correctAnswers: correctCount,
-          wrongAnswers: wrongCount,
-          percentage,
-          answersLog: currentLog
-        }
-      });
-    }
-  }, [currentIdx, questions, quiz, navigate]);
-
-  // 6. Automatically Move on Time-Out
-  const handleTimeOut = useCallback(() => {
-    const currentQuestion = questions[currentIdx];
-    const newLog = [
-      ...answersLog,
-      {
-        questionId: currentQuestion.id,
-        questionText: currentQuestion.question,
-        selected: "(Time Out)",
-        correct: currentQuestion.correctAnswer,
-        explanation: currentQuestion.explanation,
-        isCorrect: false,
-        points: 0
-      }
-    ];
-    setAnswersLog(newLog);
-    
-    // Play negative sound on timeout
-    playSynthesizerSound("incorrect");
-
-    advanceQuiz(newLog, score);
-  }, [currentIdx, questions, answersLog, playSynthesizerSound, advanceQuiz, score]);
-
-  // 3. Question Transition Timer
+  // Timer Effect
   useEffect(() => {
-    if (!quizStarted || isPrepScreen || questions.length === 0 || !quiz) return;
+    if (loading || error || isFinished || isAnswered || !quiz) return;
 
-    // Reset countdown timer for current question
-    setTimeLeft(quiz.timePerQuestion);
-
-    // Clear previous timer
-    if (timerRef.current) clearInterval(timerRef.current);
+    if (timeLeft === 0) {
+      handleTimeOut();
+      return;
+    }
 
     timerRef.current = setInterval(() => {
-      if (timeLeftRef.current <= 1) {
-        clearInterval(timerRef.current);
-        handleTimeOut();
-      } else {
-        setTimeLeft((prev) => {
-          const nextVal = prev - 1;
-          // Play warning tick on last 3 seconds
-          if (nextVal <= 3) {
-            playSynthesizerSound("tick");
-          }
-          return nextVal;
-        });
-      }
+      setTimeLeft((prev) => {
+        const newTime = prev - 1;
+        if (newTime <= 5 && newTime > 0) {
+          soundService.playTick();
+        }
+        return newTime;
+      });
     }, 1000);
 
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [currentIdx, quizStarted, isPrepScreen, questions, quiz, handleTimeOut, playSynthesizerSound]);
+    return () => clearInterval(timerRef.current);
+  }, [timeLeft, loading, error, isFinished, isAnswered, quiz]);
 
-  // 5. Next Question / Option Submission Handler
-  const goToNextQuestion = useCallback(() => {
-    if (!selectedOption) return;
+  const handleTimeOut = () => {
+    setIsAnswered(true);
+    setSelectedOption(null); // Indicates they ran out of time
+    soundService.playWrong();
+  };
 
-    const currentQuestion = questions[currentIdx];
-    const isCorrect = selectedOption === currentQuestion.correctAnswer;
-    const pointsAwarded = isCorrect ? currentQuestion.points : 0;
-
-    // Sound effect based on correctness
-    if (isCorrect) {
-      playSynthesizerSound("correct");
+  const handleOptionSelect = (option) => {
+    if (isAnswered) return;
+    
+    setSelectedOption(option);
+    setIsAnswered(true);
+    clearInterval(timerRef.current);
+    
+    const currentQuestion = quiz.questions[currentIndex];
+    if (option === currentQuestion.correctAnswer) {
+      setScore((prev) => prev + (currentQuestion.points || 10));
+      soundService.playCorrect();
     } else {
-      playSynthesizerSound("incorrect");
+      soundService.playWrong();
     }
+  };
 
-    // Save results
-    const newLog = [
-      ...answersLog,
-      {
-        questionId: currentQuestion.id,
-        questionText: currentQuestion.question,
-        selected: selectedOption,
-        correct: currentQuestion.correctAnswer,
-        explanation: currentQuestion.explanation,
-        isCorrect,
-        points: pointsAwarded
-      }
-    ];
-    setAnswersLog(newLog);
+  const handleNext = () => {
+    if (currentIndex < quiz.questions.length - 1) {
+      setCurrentIndex((prev) => prev + 1);
+      setSelectedOption(null);
+      setIsAnswered(false);
+      setTimeLeft(quiz.timePerQuestion);
+    } else {
+      finishQuiz();
+    }
+  };
 
-    const nextScore = score + pointsAwarded;
-    setScore(nextScore);
+  const finishQuiz = () => {
+    setIsFinished(true);
+    
+    // Trigger confetti based on score
+    const totalPossible = quiz.questions.reduce((sum, q) => sum + (q.points || 10), 0);
+    const percentage = score / totalPossible;
+    
+    if (percentage >= 0.7) {
+      // Good score!
+      const duration = 3 * 1000;
+      const animationEnd = Date.now() + duration;
+      const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
 
-    advanceQuiz(newLog, nextScore);
-  }, [selectedOption, currentIdx, questions, answersLog, score, playSynthesizerSound, advanceQuiz]);
+      const randomInRange = (min, max) => Math.random() * (max - min) + min;
 
-  // 4. Keyboard Navigation Setup
+      const interval = setInterval(function() {
+        const timeLeft = animationEnd - Date.now();
+
+        if (timeLeft <= 0) {
+          return clearInterval(interval);
+        }
+
+        const particleCount = 50 * (timeLeft / duration);
+        confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
+        confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
+      }, 250);
+    } else if (percentage >= 0.4) {
+      // Okay score
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
+    }
+  };
+
+  const handleScoreSubmit = async (e) => {
+    e.preventDefault();
+    if (!playerName.trim()) return;
+    
+    setSubmittingScore(true);
+    try {
+      await saveLeaderboardEntry({ quizId: quiz.id, playerName: playerName.trim(), score });
+      setScoreSubmitted(true);
+    } catch (err) {
+      console.error("Failed to submit score:", err);
+      alert("Failed to submit score. Please try again.");
+    } finally {
+      setSubmittingScore(false);
+    }
+  };
+
+  // Keyboard Navigation
   useEffect(() => {
-    if (isPrepScreen || !quizStarted) return;
-
     const handleKeyDown = (e) => {
-      // Keys '1' to '4'
-      if (["1", "2", "3", "4"].includes(e.key)) {
-        const index = parseInt(e.key) - 1;
-        const currentQuestion = questions[currentIdx];
-        if (currentQuestion && currentQuestion.shuffledOptions[index]) {
-          setSelectedOption(currentQuestion.shuffledOptions[index]);
+      // Don't interfere if user is typing their name
+      if (isFinished || loading || error || !quiz) return;
+
+      if (!isAnswered) {
+        const currentQuestion = quiz.questions[currentIndex];
+        let selectedIdx = -1;
+        if (e.key === '1') selectedIdx = 0;
+        if (e.key === '2') selectedIdx = 1;
+        if (e.key === '3') selectedIdx = 2;
+        if (e.key === '4') selectedIdx = 3;
+        
+        if (selectedIdx >= 0 && selectedIdx < currentQuestion.options.length) {
+          handleOptionSelect(currentQuestion.options[selectedIdx]);
+        }
+      } else {
+        // If answered, pressing Enter advances to the next question
+        if (e.key === 'Enter') {
+          handleNext();
         }
       }
-      
-      // Submit / Next on 'Enter'
-      if (e.key === "Enter" && selectedOption) {
-        goToNextQuestion();
-      }
     };
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedOption, currentIdx, questions, isPrepScreen, quizStarted, goToNextQuestion]);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isAnswered, isFinished, loading, error, quiz, currentIndex]);
 
+  if (loading) return <div className="flex justify-center items-center h-[60vh]"><div className="w-16 h-16 border-4 border-indigo-500/30 border-t-indigo-600 rounded-full animate-spin"></div></div>;
+  if (error || !quiz) return <div className="text-center py-20">Error Loading Quiz.</div>;
 
-
-  if (loading) {
+  if (isFinished) {
+    const totalPossible = quiz.questions.reduce((sum, q) => sum + (q.points || 10), 0);
+    const percentage = Math.round((score / totalPossible) * 100);
+    
     return (
-      <div className="flex flex-1 items-center justify-center p-12">
-        <div className="flex flex-col items-center gap-3">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-violet-500 border-t-transparent"></div>
-          <p className="text-sm font-semibold text-slate-500">Loading quiz engine...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error || !quiz) {
-    return (
-      <div className="mx-auto max-w-md px-4 py-16 text-center">
-        <div className="mb-4 inline-flex rounded-full bg-rose-50 p-3 text-rose-500">
-          <ArrowLeft className="h-8 w-8" />
-        </div>
-        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Quiz not found</h2>
-        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{error || "Check the URL and try again."}</p>
-        <Link
-          to="/"
-          className="mt-5 inline-flex items-center gap-1 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-violet-700"
-        >
-          <ArrowLeft className="h-4 w-4" /> Back to Quizzes
-        </Link>
-      </div>
-    );
-  }
-
-  // Pre-game Setup Screen
-  if (isPrepScreen) {
-    return (
-      <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 lg:py-12 animate-fade-in-up">
-        {/* Header Breadcrumb */}
-        <Link
-          to="/"
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-violet-600 transition-colors dark:text-slate-400 dark:hover:text-violet-400 mb-6"
-        >
-          <ArrowLeft className="h-4 w-4" /> Back to list
-        </Link>
-
-        <div className="glass-card overflow-hidden rounded-3xl border border-slate-200/80 shadow-xl dark:border-slate-800/80">
-          {/* Cover gradient banner */}
-          <div className="bg-gradient-to-br from-violet-600 to-indigo-700 p-8 text-white text-center sm:p-10">
-            <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-semibold uppercase tracking-wider backdrop-blur-md">
-              {quiz.category}
-            </span>
-            <h1 className="mt-4 text-3xl font-extrabold tracking-tight sm:text-4xl">
-              {quiz.title}
-            </h1>
-            <p className="mt-3 text-violet-100 font-medium max-w-md mx-auto">
-              {quiz.description}
-            </p>
+      <div className="max-w-2xl mx-auto animate-fade-up">
+        <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl overflow-hidden border border-slate-200 dark:border-slate-700/50 text-center">
+          <div className="bg-gradient-to-br from-indigo-600 to-violet-600 p-12 text-white relative">
+            <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
+            <Trophy size={80} className="mx-auto mb-6 text-yellow-300 drop-shadow-lg animate-bounce" />
+            <h2 className="text-4xl font-extrabold mb-2">Quiz Completed!</h2>
+            <p className="text-indigo-100 text-lg">{quiz.title}</p>
           </div>
-
-          <div className="p-6 sm:p-10 space-y-8">
-            {/* Rules Grid */}
-            <div>
-              <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
-                <Settings className="h-5 w-5 text-violet-500" />
-                <span>Quiz Setup & Information</span>
-              </h2>
-
-              <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm font-medium text-slate-600 dark:text-slate-300">
-                <div className="bg-slate-50 dark:bg-slate-900/40 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
-                  <span className="text-xs text-slate-400 dark:text-slate-500 block uppercase tracking-wider">Timing</span>
-                  <span className="text-lg font-bold text-slate-800 dark:text-slate-200 mt-1 block">
-                    {quiz.timePerQuestion} seconds per question
-                  </span>
-                </div>
-                <div className="bg-slate-50 dark:bg-slate-900/40 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
-                  <span className="text-xs text-slate-400 dark:text-slate-500 block uppercase tracking-wider">Questions</span>
-                  <span className="text-lg font-bold text-slate-800 dark:text-slate-200 mt-1 block">
-                    {quiz.totalQuestions} Questions total
-                  </span>
-                </div>
+          
+          <div className="p-8 md:p-12">
+            <div className="mb-10">
+              <div className="text-sm font-bold text-slate-500 uppercase tracking-widest mb-2">Your Final Score</div>
+              <div className="flex items-end justify-center gap-2">
+                <span className="text-6xl font-black text-slate-800 dark:text-white leading-none">{score}</span>
+                <span className="text-2xl font-bold text-slate-400 mb-1">/ {totalPossible}</span>
               </div>
-
-              {/* Game Rules List */}
-              <ul className="mt-5 space-y-2.5 text-xs text-slate-500 dark:text-slate-400">
-                <li className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-violet-500"></span>
-                  <span>Only one option can be selected per question.</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-violet-500"></span>
-                  <span>Once selected, click <b>Next</b> or press <b>Enter</b> to proceed.</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-violet-500"></span>
-                  <span>If the timer runs out, the engine advances automatically (0 points).</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-violet-500"></span>
-                  <span>No navigation back: you cannot revisit previous questions.</span>
-                </li>
-              </ul>
-            </div>
-
-            {/* Toggle Config Toggles */}
-            <div className="bg-slate-50 dark:bg-slate-900/30 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-4">
-              <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                Customizations & Features
-              </h3>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {/* Shuffle Qs */}
-                <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                  <input
-                    type="checkbox"
-                    checked={shuffleQuestions}
-                    onChange={(e) => setShuffleQuestions(e.target.checked)}
-                    className="h-4.5 w-4.5 rounded border-slate-300 text-violet-600 focus:ring-violet-500"
-                  />
-                  <div>
-                    <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">Shuffle Questions</span>
-                    <span className="text-[10px] text-slate-400 block">Randomizes order</span>
-                  </div>
-                </label>
-
-                {/* Shuffle Options */}
-                <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                  <input
-                    type="checkbox"
-                    checked={shuffleOptions}
-                    onChange={(e) => setShuffleOptions(e.target.checked)}
-                    className="h-4.5 w-4.5 rounded border-slate-300 text-violet-600 focus:ring-violet-500"
-                  />
-                  <div>
-                    <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">Shuffle Options</span>
-                    <span className="text-[10px] text-slate-400 block">Randomizes options</span>
-                  </div>
-                </label>
-
-                {/* Sound Toggle */}
-                <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                  <input
-                    type="checkbox"
-                    checked={soundEnabled}
-                    onChange={(e) => setSoundEnabled(e.target.checked)}
-                    className="h-4.5 w-4.5 rounded border-slate-300 text-violet-600 focus:ring-violet-500"
-                  />
-                  <div className="flex items-center gap-1">
-                    {soundEnabled ? <Volume2 className="h-4 w-4 text-violet-500" /> : <VolumeX className="h-4 w-4 text-slate-400" />}
-                    <div>
-                      <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">Sound FX</span>
-                      <span className="text-[10px] text-slate-400 block">Synthesizer audio</span>
-                    </div>
-                  </div>
-                </label>
-              </div>
-
-              {/* Keyboard Shortcuts Hint */}
-              <div className="border-t border-slate-200/50 pt-4 dark:border-slate-800 flex items-center gap-2 text-[11px] font-semibold text-slate-400 uppercase tracking-wide">
-                <Keyboard className="h-4 w-4" />
-                <span>Tip: Press keys <kbd className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800">1</kbd> - <kbd className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800">4</kbd> to select options, and <kbd className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800">Enter</kbd> to submit.</span>
+              <div className="mt-4 inline-flex items-center gap-2 bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 px-4 py-2 rounded-full font-bold">
+                {percentage}% Accuracy
               </div>
             </div>
 
-            {/* Play Button */}
-            <button
-              onClick={startQuiz}
-              className="w-full flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 py-4 font-bold text-white shadow-lg shadow-indigo-100 hover:from-indigo-600 hover:to-violet-600 active:scale-99 transition-all cursor-pointer dark:shadow-none"
-            >
-              <Play className="h-5 w-5 fill-white" />
-              <span>Start Quiz Campaign</span>
-            </button>
+            {!scoreSubmitted ? (
+              <div className="bg-slate-50 dark:bg-slate-700/50 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 mb-8">
+                <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-4">Save Your Score</h3>
+                <form onSubmit={handleScoreSubmit} className="flex gap-3">
+                  <input
+                    type="text"
+                    placeholder="Enter your name..."
+                    value={playerName}
+                    onChange={(e) => setPlayerName(e.target.value)}
+                    maxLength={20}
+                    required
+                    className="flex-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white"
+                  />
+                  <button 
+                    type="submit" 
+                    disabled={submittingScore || !playerName.trim()}
+                    className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-md hover:shadow-lg whitespace-nowrap"
+                  >
+                    {submittingScore ? "Saving..." : "Submit"}
+                  </button>
+                </form>
+              </div>
+            ) : (
+              <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-6 mb-8 text-emerald-700 dark:text-emerald-400 font-bold flex items-center justify-center gap-2">
+                <CheckCircle2 size={24} />
+                Score successfully submitted to Leaderboard!
+              </div>
+            )}
+
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button onClick={() => navigate("/")} className="btn-secondary flex items-center justify-center gap-2">
+                <Home size={20} /> Back to Home
+              </button>
+              <button onClick={() => window.location.reload()} className="btn-primary flex items-center justify-center gap-2">
+                <RotateCcw size={20} /> Play Again
+              </button>
+              <button onClick={() => navigate("/leaderboard")} className="btn-secondary flex items-center justify-center gap-2 bg-violet-100 text-violet-700 hover:bg-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:hover:bg-violet-900/50">
+                <Trophy size={20} /> View Leaderboard
+              </button>
+            </div>
           </div>
         </div>
       </div>
     );
   }
 
-  // Active Game Play Board
-  const currentQuestion = questions[currentIdx];
+  const currentQuestion = quiz.questions[currentIndex];
+  const progress = ((currentIndex) / quiz.questions.length) * 100;
+  
+  // Determine time color
+  let timeColor = "text-indigo-600 dark:text-indigo-400";
+  if (timeLeft <= 5 && !isAnswered) timeColor = "text-red-500 animate-pulse";
+  else if (timeLeft <= 10 && !isAnswered) timeColor = "text-amber-500";
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 lg:py-12 animate-fade-in-up">
-      {/* Quiz Progress & Timer Header */}
-      <div className="flex items-center justify-between mb-4 text-sm font-semibold text-slate-400 dark:text-slate-500">
-        <div>
-          <span>Question </span>
-          <span className="text-slate-700 dark:text-slate-200 font-bold">{currentIdx + 1}</span>
-          <span> of {questions.length}</span>
+    <div className="max-w-3xl mx-auto animate-fade-in pb-12">
+      {/* Header Info */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="bg-white dark:bg-slate-800 px-4 py-2 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700/50 font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+          Question <span className="text-indigo-600 dark:text-indigo-400">{currentIndex + 1}</span> of {quiz.totalQuestions}
         </div>
-
-        {/* Floating Timer Badge */}
-        <div
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-bold font-mono transition-all duration-300 ${
-            timeLeft <= 3
-              ? "bg-rose-50 border-rose-200 text-rose-600 dark:bg-rose-950/20 dark:border-rose-900/30 dark:text-rose-400 animate-pulse scale-105"
-              : timeLeft <= 6
-              ? "bg-amber-50 border-amber-200 text-amber-600 dark:bg-amber-950/20 dark:border-amber-900/30 dark:text-amber-400"
-              : "bg-slate-50 border-slate-200 text-slate-600 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400"
-          }`}
-        >
-          <Clock className={`h-3.5 w-3.5 ${timeLeft <= 3 ? "animate-spin" : ""}`} />
-          <span>{timeLeft}s remaining</span>
+        
+        <div className="bg-white dark:bg-slate-800 px-4 py-2 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700/50 font-bold flex items-center gap-2">
+          Score: <span className="text-violet-600 dark:text-violet-400">{score}</span>
         </div>
       </div>
 
       {/* Progress Bar */}
-      <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mb-6">
-        <div
-          className="h-full bg-gradient-to-r from-violet-500 to-indigo-600 transition-all duration-500"
-          style={{ width: `${((currentIdx + 1) / questions.length) * 100}%` }}
+      <div className="w-full h-3 bg-slate-200 dark:bg-slate-700 rounded-full mb-8 overflow-hidden shadow-inner">
+        <div 
+          className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all duration-500 ease-out rounded-full"
+          style={{ width: `${progress}%` }}
         ></div>
       </div>
 
-      {/* Main Question Card */}
-      <div className="glass-card rounded-3xl p-6 sm:p-10 shadow-lg border border-slate-200/80 dark:border-slate-800/80 animate-scale-up">
-        {/* Points indicator */}
-        <div className="flex justify-between items-center mb-6">
-          <span className="text-xs font-bold text-violet-600 dark:text-violet-400 uppercase tracking-widest bg-violet-500/10 px-3 py-1 rounded-full">
-            {quiz.category}
-          </span>
-          <span className="text-xs text-slate-400 dark:text-slate-500 font-semibold font-mono">
-            Value: {currentQuestion.points} points
-          </span>
+      <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl overflow-hidden border border-slate-200 dark:border-slate-700/50 relative">
+        
+        {/* Timer Bar */}
+        <div className="absolute top-0 left-0 w-full h-1.5 bg-slate-100 dark:bg-slate-700">
+          <div 
+            className="h-full bg-indigo-500 transition-all duration-1000 ease-linear"
+            style={{ width: `${(timeLeft / quiz.timePerQuestion) * 100}%`, backgroundColor: timeLeft <= 5 ? '#ef4444' : timeLeft <= 10 ? '#f59e0b' : '#6366f1' }}
+          ></div>
         </div>
 
-        {/* Question text */}
-        <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100 leading-tight mb-8">
-          {currentQuestion.question}
-        </h2>
+        <div className="p-8 md:p-10 pt-12">
+          <div className="flex justify-between items-start mb-8 gap-4">
+            <h2 className="text-2xl md:text-3xl font-extrabold text-slate-800 dark:text-white leading-tight">
+              {currentQuestion.question}
+            </h2>
+            <div className={`flex-shrink-0 flex items-center gap-2 font-bold text-2xl ${timeColor} bg-slate-50 dark:bg-slate-900/50 px-4 py-2 rounded-2xl border border-slate-100 dark:border-slate-800`}>
+              <Clock size={24} />
+              {timeLeft}s
+            </div>
+          </div>
 
-        {/* Answer Options Grid */}
-        <div className="space-y-4">
-          {currentQuestion.shuffledOptions.map((option, idx) => {
-            const isSelected = selectedOption === option;
-            return (
-              <button
-                key={idx}
-                onClick={() => setSelectedOption(option)}
-                className={`w-full flex items-center justify-between text-left p-4.5 rounded-2xl border font-semibold text-sm transition-all duration-200 ${
-                  isSelected
-                    ? "bg-violet-500/10 border-violet-500 text-violet-700 dark:bg-violet-950/10 dark:border-violet-400 dark:text-violet-300 ring-2 ring-violet-500/20"
-                    : "bg-white border-slate-200 text-slate-700 hover:border-slate-400 dark:bg-slate-900/50 dark:border-slate-800 dark:text-slate-300 dark:hover:border-slate-700"
-                } group cursor-pointer hover:scale-[1.01]`}
-              >
-                <div className="flex items-center gap-3">
-                  {/* Shortcut key indicator */}
-                  <span
-                    className={`flex h-6 w-6 items-center justify-center rounded-lg text-xs font-bold transition-all ${
-                      isSelected
-                        ? "bg-violet-600 text-white"
-                        : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 group-hover:bg-slate-200 dark:group-hover:bg-slate-700"
-                    }`}
-                  >
-                    {idx + 1}
-                  </span>
-                  <span>{option}</span>
-                </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+            {currentQuestion.options.map((option, idx) => {
+              // Determine styles based on state
+              let optionStyle = "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-indigo-400 hover:shadow-md";
+              let icon = null;
+              
+              if (isAnswered) {
+                if (option === currentQuestion.correctAnswer) {
+                  optionStyle = "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500 text-emerald-800 dark:text-emerald-300 ring-2 ring-emerald-500/20";
+                  icon = <CheckCircle2 className="text-emerald-500" size={24} />;
+                } else if (option === selectedOption) {
+                  optionStyle = "bg-red-50 dark:bg-red-900/20 border-red-500 text-red-800 dark:text-red-300 ring-2 ring-red-500/20";
+                  icon = <XCircle className="text-red-500" size={24} />;
+                } else {
+                  optionStyle = "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 opacity-60 text-slate-500";
+                }
+              }
 
-                {/* Micro animation checkdot */}
-                <div
-                  className={`h-4.5 w-4.5 rounded-full border flex items-center justify-center transition-all ${
-                    isSelected ? "border-violet-500 bg-violet-600 text-white" : "border-slate-300"
-                  }`}
+              return (
+                <button
+                  key={idx}
+                  onClick={() => handleOptionSelect(option)}
+                  disabled={isAnswered}
+                  className={`w-full text-left p-6 rounded-2xl border-2 transition-all duration-300 font-semibold text-lg flex justify-between items-center ${optionStyle}`}
                 >
-                  {isSelected && (
-                    <span className="block h-1.5 w-1.5 rounded-full bg-white"></span>
-                  )}
+                  <span className="flex items-center gap-3">
+                    <span className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-sm font-bold text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-600">
+                      {idx + 1}
+                    </span>
+                    {option}
+                  </span>
+                  {icon && <span className="animate-scale-in">{icon}</span>}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Explanation Section (Only shown after answering) */}
+          {isAnswered && (
+            <div className="animate-fade-up">
+              {currentQuestion.explanation && (
+                <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl p-6 border border-indigo-100 dark:border-indigo-800/50 mb-8">
+                  <h4 className="font-bold text-indigo-900 dark:text-indigo-300 mb-2 flex items-center gap-2">
+                    <span className="bg-indigo-200 dark:bg-indigo-700 w-6 h-6 rounded-full flex items-center justify-center text-sm">i</span>
+                    Explanation
+                  </h4>
+                  <p className="text-indigo-800 dark:text-indigo-200">{currentQuestion.explanation}</p>
                 </div>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Navigation & Submit footer */}
-        <div className="mt-10 pt-6 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center">
-          <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">
-            Progress locks upon submitting.
-          </span>
-
-          <button
-            onClick={goToNextQuestion}
-            disabled={!selectedOption}
-            className={`cursor-pointer inline-flex items-center gap-1.5 rounded-2xl px-6 py-3.5 font-bold text-sm text-white shadow shadow-indigo-150 transition-all ${
-              selectedOption
-                ? "bg-gradient-to-r from-violet-600 to-indigo-600 hover:shadow-indigo-300 active:scale-98"
-                : "bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 shadow-none cursor-not-allowed"
-            }`}
-          >
-            <span>{currentIdx === questions.length - 1 ? "Submit Campaign" : "Next Question"}</span>
-            <ChevronRight className="h-4 w-4" />
-          </button>
+              )}
+              
+              <div className="flex justify-end">
+                <button
+                  onClick={handleNext}
+                  className="btn-primary flex items-center gap-2 px-8 group"
+                >
+                  {currentIndex < quiz.questions.length - 1 ? "Next Question" : "Finish Quiz"}
+                  <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                  <span className="text-xs bg-indigo-500 px-2 py-1 rounded ml-2 hidden md:inline-block">Enter ↵</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

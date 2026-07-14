@@ -10,11 +10,11 @@ const getLocalStorageLeaderboard = (quizId) => {
     if (!data) return [];
     const parsed = JSON.parse(data);
     
-    // Filter by quiz and sort: 
+    // Filter by quiz (if provided) and sort: 
     // 1. By score (descending)
     // 2. By completedAt (descending - latest completion time first)
     return parsed
-      .filter((entry) => entry.quizId === quizId)
+      .filter((entry) => !quizId || entry.quizId === quizId)
       .sort((a, b) => {
         if (b.score !== a.score) {
           return b.score - a.score;
@@ -74,13 +74,23 @@ export const getLeaderboard = async (quizId) => {
   if (isFirebaseConfigured && db) {
     try {
       const leaderboardRef = collection(db, "leaderboard");
-      const q = query(
-        leaderboardRef,
-        where("quizId", "==", quizId),
-        orderBy("score", "desc"),
-        orderBy("completedAt", "desc"),
-        limit(10)
-      );
+      let q;
+      if (quizId) {
+        q = query(
+          leaderboardRef,
+          where("quizId", "==", quizId),
+          orderBy("score", "desc"),
+          orderBy("completedAt", "desc"),
+          limit(10)
+        );
+      } else {
+        q = query(
+          leaderboardRef,
+          orderBy("score", "desc"),
+          orderBy("completedAt", "desc"),
+          limit(10)
+        );
+      }
       
       const querySnapshot = await getDocs(q);
       const results = [];

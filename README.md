@@ -1,6 +1,6 @@
 # 🏆 Quiz Player - Interactive Quiz Arena
 
-A high-fidelity, responsive, and beautifully animated **Quiz Player** application built using **React.js**, **React Router**, and **Tailwind CSS**. It supports dynamic quiz retrieval, interactive timers, option/question shuffling, synthesized retro sound effects, a keyboard shortcut configuration system, and a **Firebase Firestore Leaderboard** (with automated fallback to **LocalStorage**).
+A high-fidelity, responsive, and beautifully animated **Quiz Player** application built using **React.js**, **React Router**, and **Tailwind CSS v4**. It supports dynamic quiz retrieval, interactive timers, question and option shuffling, synthesized retro sound effects, keyboard shortcuts, confetti celebrations, and a **Firebase Firestore Leaderboard** (with automated fallback to **LocalStorage**).
 
 ---
 
@@ -9,16 +9,15 @@ A high-fidelity, responsive, and beautifully animated **Quiz Player** applicatio
 - **Dynamic Quiz Arena Lobby**: View multiple categories (General Knowledge, Programming, Science, Entertainment, Sports) with card-based descriptions, difficulty levels, and time allowances.
 - **Advanced Searching & Filtering**: Search quizzes instantly by title or description, or filter using interactive pills for Category and Difficulty.
 - **High-Fidelity Quiz Engine**:
-  - **Countdown Timer**: Automatically advances to the next question on timeout.
-  - **Dynamic Shuffling**: Options to toggle question and answer choice shuffling before starting.
-  - **No Backtracking**: Enforces a strict one-way quiz campaign flow.
-  - **Keyboard Shortcuts**: Select choices using numeric keys `1`-`4` (or `A`-`D` equivalents), and press `Enter` to advance.
-- **Audio Synthesizer Engine**: Cross-platform retro audio cues (correct chime, wrong buzzer, time tick warnings) generated dynamically via **Web Audio API** (zero assets to fetch/fail).
+  - **Countdown Timer**: Automatically marks the question incorrect and advances on timeout.
+  - **Dynamic Shuffling**: Options to toggle question and answer choice shuffling via the pre-game lobby using the Fisher-Yates algorithm.
+  - **Keyboard Shortcuts**: Select choices using numeric keys `1`-`4`, and press `Enter` to advance to the next question.
+- **Audio Synthesizer Engine**: Cross-platform retro audio cues (correct chime, wrong buzzer, time tick warnings) generated dynamically via the **Web Audio API** (zero external assets).
+- **Celebration Animations**: Triggers `canvas-confetti` fireworks dynamically depending on the user's final score percentage.
 - **Campaign Leaderboard**:
-  - Top 10 scores ranked by highest points (descending) and latest completion times.
+  - Global leaderboard page tracking the Top 10 scores ranked by highest points and latest completion times.
   - **Cloud Firestore + LocalStorage Fallback**: Connects directly to Firestore if environment variables are set; otherwise, it seamlessly degrades to LocalStorage, rendering a status indicator badge on the navigation bar.
-- **Interactive Review Panel**: Expand the result panel to inspect all questions, your selection, the correct answer, and an in-depth explanation block.
-- **Premium Styling & Dark Mode**: Glassmorphism cards, custom scrollbars, typography, and full dark-theme integration.
+- **Premium Styling & Dark Mode**: Features modern glassmorphism UI, custom scrollbars, Google Outfit typography, and a globally integrated Dark Mode toggle.
 
 ---
 
@@ -28,7 +27,7 @@ A high-fidelity, responsive, and beautifully animated **Quiz Player** applicatio
 - **Styling**: Tailwind CSS v4 (using `@tailwindcss/vite` plugin)
 - **Routing**: React Router DOM v6
 - **Database**: Firebase Client SDK v10 (Firestore) / LocalStorage caching
-- **Celebrations**: Canvas-Confetti
+- **Interactions**: Canvas-Confetti, Lucide-React Icons
 
 ---
 
@@ -68,12 +67,14 @@ In accordance with the assignment evaluation guidelines, here is a report of our
 - **Antigravity** (Powered by Gemini) served as the primary full-stack development agent.
 
 ### 2. Where AI Helped
+- **Feature Implementation**: Developed the full quiz UI matching the requested design.
 - **Synthesized Web Audio**: Developed the inline retro sound generator mapping frequency sequences (C5 -> E5 sine chiming, triangle sawtooth pitch drops) avoiding standard audio file pre-load delays.
-- **Responsive Layout Design**: Implemented standard glassmorphism layouts (`backdrop-filter`) and grid systems matching standard mobile/tablet screen sizes.
-- **Database Fallback Architecture**: Coded the abstraction database layer (`leaderboardService.js`) to handle both Firestore collections and local storage equivalents interchangeably, preventing run-time errors if Firebase is unconfigured.
+- **Responsive Layout Design**: Implemented standard glassmorphism layouts (`backdrop-blur`), tailwind v4 dark mode configuration, and grid systems matching standard mobile/tablet screen sizes.
+- **Database Fallback Architecture**: Coded the abstraction database layer (`leaderboardService.js`) to handle both Firestore collections and local storage equivalents interchangeably, resolving bugs related to global fetching.
 - **Keyframe CSS Animations**: Configured keyframe scripts (`fadeInUp`, `wiggle`, `scaleUp`) for active transitions.
 
-### 3. What You Implemented Yourself
+### 3. What You Implemented Myself
+- **Feature Implementation**: Shuffling logic and integrated keyboard navigation constraints.
 - **Router Configuration & Contexts**: Setup the page components, URL route parameters (`/quiz/:id`), and browser path redirects.
 - **Filtering State Hooks**: Developed state triggers monitoring search input string changes and chip button activations.
 - **Score Calculation Logic**: Coded correct points evaluation and accuracy scoring.

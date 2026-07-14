@@ -6,6 +6,14 @@
   font-family: 'Outfit', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
 }
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  html, body {
+    @apply bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 transition-colors duration-300;
+  }
+}
+
 /* Custom CSS keyframes and animations for visual polish */
 @keyframes fadeInUp {
   from {
