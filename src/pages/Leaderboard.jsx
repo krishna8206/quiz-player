@@ -6,22 +6,8 @@ export default function Leaderboard() {
   const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
-  // We'll also fetch quizzes to map quizId to quiz titles
-  const [quizzes, setQuizzes] = useState({});
 
   useEffect(() => {
-    // Fetch quizzes mapping
-    fetch("/data/quiz.json")
-      .then(res => res.json())
-      .then(data => {
-        const quizMap = {};
-        data.quizzes.forEach(q => {
-          quizMap[q.id] = q.title;
-        });
-        setQuizzes(quizMap);
-      })
-      .catch(err => console.error("Failed to load quiz data for mapping:", err));
 
     // Fetch leaderboard
     const fetchScores = async () => {
@@ -103,11 +89,12 @@ export default function Leaderboard() {
                     RankIcon = <span className={rankTextClass}>#{index + 1}</span>;
                   }
 
-                  const date = new Date(entry.createdAt).toLocaleDateString(undefined, { 
+                  const dateStr = entry.completedAt || entry.createdAt;
+                  const date = dateStr ? new Date(dateStr).toLocaleDateString(undefined, { 
                     month: 'short', 
                     day: 'numeric',
                     year: 'numeric'
-                  });
+                  }) : "N/A";
 
                   return (
                     <tr key={entry.id} className={rowClass}>
@@ -115,10 +102,10 @@ export default function Leaderboard() {
                         {RankIcon}
                       </td>
                       <td className="p-6 font-bold text-lg text-slate-800 dark:text-white">
-                        {entry.playerName}
+                        {entry.name || entry.playerName || "Anonymous"}
                       </td>
                       <td className="p-6 text-slate-600 dark:text-slate-400 hidden md:table-cell font-medium">
-                        {quizzes[entry.quizId] || entry.quizId}
+                        {entry.quizTitle || entry.quizId}
                       </td>
                       <td className="p-6 text-slate-500 dark:text-slate-400 text-sm whitespace-nowrap">
                         <div className="flex items-center gap-2">

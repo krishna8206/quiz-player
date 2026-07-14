@@ -189,7 +189,17 @@ export default function QuizPlayer() {
     
     setSubmittingScore(true);
     try {
-      await saveLeaderboardEntry({ quizId: quiz.id, playerName: playerName.trim(), score });
+      const totalPossible = quiz.questions.reduce((sum, q) => sum + (q.points || 10), 0);
+      const percentage = Math.round((score / totalPossible) * 100);
+      
+      await saveLeaderboardEntry({ 
+        name: playerName.trim(),
+        quizId: quiz.id, 
+        quizTitle: quiz.title,
+        score,
+        percentage,
+        completedAt: new Date().toISOString()
+      });
       setScoreSubmitted(true);
     } catch (err) {
       console.error("Failed to submit score:", err);
